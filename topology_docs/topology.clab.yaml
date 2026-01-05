@@ -3,13 +3,11 @@ name: lab_topology
 topology:
   nodes:
     ubuntu1:
-      kind: linux
-      image: vrnetlab/canonical_ubuntu:ssh
-      binds:
-        - /home/luciola/.ssh:/home/clab/.ssh:ro
+      kind: generic_vm
+      image: vrnetlab/canonical_ubuntu:jammy
     ubuntu2:
       kind: generic_vm
-      image: vrnetlab/canonical_ubuntu:ssh
+      image: vrnetlab/canonical_ubuntu:jammy
     cisco1:
       kind: cisco_iol
       image: vrnetlab/cisco_iol:17.16.01a

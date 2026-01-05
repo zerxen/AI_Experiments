@@ -4,53 +4,24 @@
 Simple interactive ChatGPT CLI example using the `openai` Python library.
 
 Usage:
-1. Put your API key in `.config.txt` as:
-   OPENAI_API_KEY=sk-...your key...
+1. Put your API key in `config.py` as:
+   OPENAI_API_KEY="sk-...your key..."
 2. Run: `python chatgpt_cli.py`
 
 This script reads the key from `.config.txt`, keeps a short conversation
 history, and sends messages to the Chat Completions API.
 """
 
-import os
-
 import sys
 import time
 import openai
-from tools import getCurrentDateAndTime,tools_definition
-
+from tools import tools_definition
+from config import MODEL, MAX_TOKEN_COMPLETITION, CONFIG_PATH, OPENAI_API_KEY
 from tools_processing import process_tool_calls
 
-CONFIG_PATH = "config.conf"
-MODEL="gpt-5-mini"
-MAX_TOKEN_COMPLETITION=2000
-
-def load_api_key(path=CONFIG_PATH):
-    """Load API key from a simple key=value file or a single-line key.
-
-    Supported formats:
-    - OPENAI_API_KEY=sk-...\n
-    - single line containing the key
-    Lines starting with `#` are ignored.
-    """
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"Config file '{path}' not found. Create it with OPENAI_API_KEY=your_key")
-    with open(path, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if "=" in line:
-                k, v = line.split("=", 1)
-                if k.strip().upper() in ("OPENAI_API_KEY", "API_KEY", "OPENAI_KEY"):
-                    return v.strip()
-            else:
-                return line
-    raise ValueError("No API key found in config file.")
- 
 def main():
     try:
-        openai.api_key = load_api_key()
+        openai.api_key = OPENAI_API_KEY
     except Exception as e:
         print("Error loading API key:", e)
         sys.exit(1)

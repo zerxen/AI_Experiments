@@ -15,7 +15,7 @@ RUN mkdir -p /home/clab/.ssh && \
     chown -R clab:clab /home/clab/.ssh
 
 # Copy SSH authorized_keys
-COPY authorized_keys /home/clab/.ssh/authorized_keys
+RUN echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQCrDuxtmrTT7Zh6A7mE5dTrIM5fElfX6M5NXbv3HWmX0mEX+oqXjW5+Vi3kCQ4CJAwpKpuxjnPfGaPfDYzDkpamAR51hoXri5ftIDmrV60bT5P5EwMxnhD2+NFsWQQxV56ftof+5Rw1CajW+YUJFM71ZwXUiSyrcNVl1IZEzoNCyw== clab@clab' > /home/clab/.ssh/authorized_keys
 
 RUN chmod 600 /home/clab/.ssh/authorized_keys && \
     chown clab:clab /home/clab/.ssh/authorized_keys

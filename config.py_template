@@ -1,0 +1,8 @@
+# .config.txt - place your real OpenAI API key here and DO NOT commit.
+# Example:
+# OPENAI_API_KEY=sk-...
+
+OPENAI_API_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXX
+MODEL="gpt-5-mini"
+MAX_TOKEN_COMPLETITION=2000
+CONFIG_PATH = "config.py"
