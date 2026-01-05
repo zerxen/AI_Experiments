@@ -1,7 +1,8 @@
 import json
 import time
 import openai
-from tools import getCurrentDateAndTime,tools_definition
+from tools import getCurrentDateAndTime, getTopologyInformation, tools_definition
+from config import MODEL, MAX_TOKEN_COMPLETITION, CONFIG_PATH, OPENAI_API_KEY
 
 
 def process_tool_calls(resp, messages, tools, model, max_completion_tokens=1024):
@@ -46,6 +47,13 @@ def process_tool_calls(resp, messages, tools, model, max_completion_tokens=1024)
                         print("DEBUG: Tool result =", tool_result)
                     except Exception as e:
                         tool_result = f"Error running tool: {e}"
+                elif name == "getTopologyInformation":
+                    print("DEBUG: Entering tool: getTopologyInformation")
+                    try:
+                        tool_result = getTopologyInformation()
+                        print("DEBUG: Tool result =", tool_result)
+                    except Exception as e:
+                        tool_result = f"Error running tool: {e}"
                 else:
                     tool_result = f"Unknown tool: {name}"
 
@@ -64,9 +72,14 @@ def process_tool_calls(resp, messages, tools, model, max_completion_tokens=1024)
                     tools=tools,
                     tool_choice="auto",
                 )
+                print("DEBUG of what we recieved from GPT (follow-up): ", follow)
                 follow_msg = follow.choices[0].message.content.strip()
                 print("\nChatGPT (after tools):", follow_msg)
                 messages.append({"role": "assistant", "content": follow_msg})
+                print("Tokens used: ")
+                print(" - completion_tokens: ", follow.usage.completion_tokens)
+                print(" - prompt_tokens: ", follow.usage.prompt_tokens)
+                print(" - total_tokens: ", follow.usage.total_tokens)                
             except Exception as e:
                 print("API error during follow-up:", e)
                 time.sleep(1)

@@ -1,5 +1,4 @@
 name: lab_topology
-
 topology:
   nodes:
     ubuntu1:
@@ -23,7 +22,7 @@ topology:
         username admin
         key-hash ssh-rsa 9C6B8FFDD78F4C88C33114AD7F1C95C9
         exit
-        exit      
+        exit
     cisco2:
       kind: cisco_iol
       image: vrnetlab/cisco_iol:17.16.01a
@@ -40,7 +39,6 @@ topology:
         key-hash ssh-rsa 9C6B8FFDD78F4C88C33114AD7F1C95C9
         exit
         exit
-
   links:
     - endpoints: ["cisco1:Ethernet0/2", "ubuntu1:eth1"]  
     - endpoints: ["cisco1:Ethernet0/1","cisco2:Ethernet0/1"] 
