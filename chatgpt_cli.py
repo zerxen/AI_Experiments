@@ -21,7 +21,7 @@ from tools import getCurrentDateAndTime,tools_definition
 
 from tools_processing import process_tool_calls
 
-CONFIG_PATH = ".config.txt"
+CONFIG_PATH = "config.conf"
 MODEL="gpt-5-mini"
 MAX_TOKEN_COMPLETITION=2000
 
