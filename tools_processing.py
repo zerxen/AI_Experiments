@@ -1,7 +1,7 @@
 import json
 import time
 import openai
-from tools import getCurrentDateAndTime, getTopologyInformation, tools_definition
+from tools import getCurrentDateAndTime, getTopologyInformation, getDeviceConfiguration, executeCommandsOnDevice, tools_definition
 from config import MODEL, MAX_TOKEN_COMPLETITION, CONFIG_PATH, OPENAI_API_KEY
 
 
@@ -51,6 +51,25 @@ def process_tool_calls(resp, messages, tools, model, max_completion_tokens=1024)
                     print("DEBUG: Entering tool: getTopologyInformation")
                     try:
                         tool_result = getTopologyInformation()
+                        print("DEBUG: Tool result =", tool_result)
+                    except Exception as e:
+                        tool_result = f"Error running tool: {e}"
+                elif name == "getDeviceConfiguration":
+                    print("DEBUG: Entering tool: getDeviceConfiguration")
+                    arguments_object = function_object.get("arguments") if isinstance(function_object, dict) else getattr(function_object, "arguments", {})
+                    target = arguments_object.get("target") if isinstance(arguments_object, dict) else getattr(arguments_object, "target", None)
+                    try:
+                        tool_result = getDeviceConfiguration(target)
+                        print("DEBUG: Tool result =", tool_result)
+                    except Exception as e:
+                        tool_result = f"Error running tool: {e}"
+                elif name == "executeCommandsOnDevice":
+                    print("DEBUG: Entering tool: executeCommandsOnDevice")
+                    arguments_object = function_object.get("arguments") if isinstance(function_object, dict) else getattr(function_object, "arguments", {})
+                    target = arguments_object.get("target") if isinstance(arguments_object, dict) else getattr(arguments_object, "target", None)
+                    commands = arguments_object.get("commands") if isinstance(arguments_object, dict) else getattr(arguments_object, "commands", None)
+                    try:
+                        tool_result = executeCommandsOnDevice(target, commands)
                         print("DEBUG: Tool result =", tool_result)
                     except Exception as e:
                         tool_result = f"Error running tool: {e}"
