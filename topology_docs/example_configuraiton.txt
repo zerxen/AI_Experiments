@@ -1,0 +1,35 @@
+#ubuntu1:
+sudo ip link set ens2 up
+sudo ip addr add 10.10.10.10/24 dev ens2
+sudo ip route add 30.30.30.0/24 via 10.10.10.1
+
+#ubuntu2:
+sudo ip link set ens2 up
+sudo ip addr add 30.30.30.30/24 dev ens2
+sudo ip route add 10.10.10.0/24 via 30.30.30.2
+
+#cisco1:
+interface Ethernet0/1
+ip address 20.20.20.1 255.255.255.0
+no shut
+!
+interface Ethernet0/2
+ip address 10.10.10.1 255.255.255.0
+no shut
+exit
+!
+ip route 30.30.30.0 255.255.255.0 20.20.20.2
+
+#cisco2:
+conf t
+interface Ethernet0/1
+ip address 20.20.20.2 255.255.255.0
+no shut
+!
+interface Ethernet0/2
+ip address 30.30.30.2 255.255.255.0
+no shut
+exit
+!
+ip route 10.10.10.0 255.255.255.0 20.20.20.1
+
