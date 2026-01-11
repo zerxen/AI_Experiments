@@ -6,3 +6,4 @@ OPENAI_API_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXX
 MODEL="gpt-5-mini"
 MAX_TOKEN_COMPLETITION=2000
 CONFIG_PATH = "config.py"
+DEBUG_MODE = False  # Set to False to disable all debug prints

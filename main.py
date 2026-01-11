@@ -18,6 +18,7 @@ import openai
 from tools import tools_definition
 from config import MODEL, MAX_TOKEN_COMPLETITION, CONFIG_PATH, OPENAI_API_KEY
 from tools_processing import process_tool_calls
+from helpers import debug_print
 
 def main():
     try:
@@ -30,7 +31,11 @@ def main():
         {
             "role": "system",
             "content": (
-                "You are a helpful assistant."
+                "You are a helpful assistant. " +
+                "Any conversation or action about lab topology you can ignore the management IPs in the 172.20.20.0/24 range. Dont mention this in responses, it is known." +
+                "During configuration tasks ignore interfaces with IPs in this range, but do not break them as they serve as access for all tools. Dont mention this in responses, it is known." +
+                "Also ignore enp1s0 interfaces on linux devices and ethernet 0/0 on cisco devices as these are management addresses behind a NAT of their management 172.20.20.x IPs. Dont mention this in responses, it is known." +
+                "If topology map has a link going to eth1 on linux endpoint, on that linux that network card is actually using ens2 as interface name. Dont mention this in responses, it is known."
             ),
         }
     ]
@@ -71,8 +76,8 @@ def main():
         #----------
         # Communication with GPT
         #---------
-        print("DEBUG: Messages being sent to GPT:")
-        print(messages)
+        debug_print("DEBUG: Messages being sent to GPT:")
+        debug_print(messages)
         try:
             resp = openai.chat.completions.create(
                 model=MODEL,
@@ -82,7 +87,7 @@ def main():
                 tool_choice="auto",
             )
 
-            print("DEBUG of what we recieved from GPT: ", resp)
+            debug_print("DEBUG: What we recieved from GPT: ", resp)
 
             # Get assistant content if any
             context = {"role": "assistant", "content": ""}
@@ -117,8 +122,8 @@ def main():
 
             # Delegate tool processing to helper function if present
             if tool_calls is not None:
-                print("DEBUG: entering tools processing for tool_calls:")
-                print(tool_calls)
+                debug_print("DEBUG: entering tools processing for tool_calls:")
+                debug_print(tool_calls)
                 messages, processed_tool = process_tool_calls(resp, messages, tools_definition, MODEL, max_completion_tokens=MAX_TOKEN_COMPLETITION)
 
 

@@ -3,6 +3,28 @@ import time
 import openai
 from tools import getCurrentDateAndTime, getTopologyInformation, getDeviceConfiguration, executeCommandsOnDevice, tools_definition
 from config import MODEL, MAX_TOKEN_COMPLETITION, CONFIG_PATH, OPENAI_API_KEY
+from helpers import debug_print
+
+
+def parse_arguments(arguments_raw):
+    """
+    Safely parse arguments which may come as a JSON string or as a dictionary.
+    Returns a dictionary, or an empty dict if parsing fails.
+    """
+    if isinstance(arguments_raw, dict):
+        return arguments_raw
+    
+    if isinstance(arguments_raw, str):
+        try:
+            return json.loads(arguments_raw)
+        except json.JSONDecodeError as e:
+            print(f"WARNING: Failed to parse arguments as JSON: {e}")
+            print(f"         Raw arguments: {arguments_raw}")
+            return {}
+    
+    # If it's neither dict nor string, return empty dict
+    print(f"WARNING: Arguments is neither dict nor string: {type(arguments_raw)}")
+    return {}
 
 
 def process_tool_calls(resp, messages, tools, model, max_completion_tokens=1024):
@@ -26,7 +48,7 @@ def process_tool_calls(resp, messages, tools, model, max_completion_tokens=1024)
             tool_calls_index = 0
             for tc in tool_calls:
                 tool_calls_index += 1
-                print("-- tool_calls[",tool_calls_index,"]:\n", tc)
+                debug_print("-- tool_calls[",tool_calls_index,"]:\n", tc)
 
                 try:
                     id = tc.get("id") if isinstance(tc, dict) else getattr(tc, "id", None)
@@ -34,43 +56,51 @@ def process_tool_calls(resp, messages, tools, model, max_completion_tokens=1024)
                     name = function_object.get("name") if isinstance(tc, dict) else getattr(function_object, "name", None)
 
                 except Exception as e:
-                    print("Failed to parse tool_call entry:", e)
+                    debug_print("Failed to parse tool_call entry:", e)
                     continue
 
                 if name == "getCurrentDateAndTime":
-                    print("DEBUG: Enterigg tool: getCurrentDateAndTime")
+                    debug_print("DEBUG: Enterigg tool: getCurrentDateAndTime")
                     #fmt = function_object.get("arguments", "%Y-%m-%d %H:%M:%S") 
-                    arguments_object = function_object.get("arguments") if isinstance(function_object, dict) else getattr(function_object, "arguments", "%Y-%m-%d %H:%M:%S")
+                    arguments_raw = function_object.get("arguments") if isinstance(function_object, dict) else getattr(function_object, "arguments", {})
+                    arguments_object = parse_arguments(arguments_raw)                    
+                    #arguments_object = function_object.get("arguments") if isinstance(function_object, dict) else getattr(function_object, "arguments", "%Y-%m-%d %H:%M:%S")
                     fmt = arguments_object.get("fmt") if isinstance(arguments_object, dict) else getattr(arguments_object, "fmt", "%Y-%m-%d %H:%M:%S")
                     try:
                         tool_result = getCurrentDateAndTime(fmt)
-                        print("DEBUG: Tool result =", tool_result)
+                        debug_print("DEBUG: Tool result =", tool_result)
                     except Exception as e:
                         tool_result = f"Error running tool: {e}"
                 elif name == "getTopologyInformation":
-                    print("DEBUG: Entering tool: getTopologyInformation")
+                    debug_print("DEBUG: Entering tool: getTopologyInformation")
                     try:
                         tool_result = getTopologyInformation()
-                        print("DEBUG: Tool result =", tool_result)
+                        debug_print("DEBUG: Tool result =", tool_result)
                     except Exception as e:
                         tool_result = f"Error running tool: {e}"
                 elif name == "getDeviceConfiguration":
-                    print("DEBUG: Entering tool: getDeviceConfiguration")
-                    arguments_object = function_object.get("arguments") if isinstance(function_object, dict) else getattr(function_object, "arguments", {})
-                    target = arguments_object.get("target") if isinstance(arguments_object, dict) else getattr(arguments_object, "target", None)
+                    debug_print("DEBUG: Entering tool: getDeviceConfiguration")
+                    arguments_raw = function_object.get("arguments") if isinstance(function_object, dict) else getattr(function_object, "arguments", {})
+                    arguments_object = parse_arguments(arguments_raw)
+                    target = arguments_object.get("target", None)
+                    debug_print("DEBUG: target =", target)
                     try:
                         tool_result = getDeviceConfiguration(target)
-                        print("DEBUG: Tool result =", tool_result)
+                        debug_print("DEBUG: Tool result =", tool_result)
                     except Exception as e:
                         tool_result = f"Error running tool: {e}"
                 elif name == "executeCommandsOnDevice":
-                    print("DEBUG: Entering tool: executeCommandsOnDevice")
-                    arguments_object = function_object.get("arguments") if isinstance(function_object, dict) else getattr(function_object, "arguments", {})
-                    target = arguments_object.get("target") if isinstance(arguments_object, dict) else getattr(arguments_object, "target", None)
-                    commands = arguments_object.get("commands") if isinstance(arguments_object, dict) else getattr(arguments_object, "commands", None)
+                    debug_print("DEBUG: Entering tool: executeCommandsOnDevice")
+                    arguments_raw = function_object.get("arguments") if isinstance(function_object, dict) else getattr(function_object, "arguments", {})
+                    arguments_object = parse_arguments(arguments_raw)
+                    target = arguments_object.get("target", None)
+                    commands = arguments_object.get("commands", None)
+                    expected_string = arguments_object.get("expected_string", None)
+                    debug_print("DEBUG: target =", target)
+                    debug_print("DEBUG: commands =", commands)
                     try:
-                        tool_result = executeCommandsOnDevice(target, commands)
-                        print("DEBUG: Tool result =", tool_result)
+                        tool_result = executeCommandsOnDevice(target, commands, expected_string)
+                        debug_print("DEBUG: Tool result =", tool_result)
                     except Exception as e:
                         tool_result = f"Error running tool: {e}"
                 else:
@@ -79,8 +109,8 @@ def process_tool_calls(resp, messages, tools, model, max_completion_tokens=1024)
                 tool_call_id = tc.get("id") if isinstance(tc, dict) else getattr(tc, "id", None)
                 messages.append({"role": "tool", "name": name, "content": tool_result, "tool_call_id": tool_call_id})
 
-                print("-- messages.appeneed after execution")
-                print("   ",messages)            
+                print(".. results of tool call provided to the context")
+                debug_print("   ",messages)            
 
             # Request a follow-up now that all tools executed
             try:
@@ -91,14 +121,32 @@ def process_tool_calls(resp, messages, tools, model, max_completion_tokens=1024)
                     tools=tools,
                     tool_choice="auto",
                 )
-                print("DEBUG of what we recieved from GPT (follow-up): ", follow)
-                follow_msg = follow.choices[0].message.content.strip()
-                print("\nChatGPT (after tools):", follow_msg)
-                messages.append({"role": "assistant", "content": follow_msg})
+                debug_print("DEBUG of what we recieved from GPT (follow-up): ", follow)
+                
+                # Append the assistant's response (which may contain tool_calls or content)
+                assistant_msg = {"role": "assistant"}
+                if follow.choices[0].message.content:
+                    assistant_msg["content"] = follow.choices[0].message.content.strip()
+                    print("\nChatGPT (after tools):", assistant_msg["content"])
+                
+                # Check if the follow-up response contains tool_calls
+                follow_tool_calls = getattr(follow.choices[0].message, "tool_calls", None)
+                if follow_tool_calls:
+                    assistant_msg["tool_calls"] = follow_tool_calls
+                
+                messages.append(assistant_msg)
+                
                 print("Tokens used: ")
                 print(" - completion_tokens: ", follow.usage.completion_tokens)
                 print(" - prompt_tokens: ", follow.usage.prompt_tokens)
-                print(" - total_tokens: ", follow.usage.total_tokens)                
+                print(" - total_tokens: ", follow.usage.total_tokens)
+                
+                # If follow-up contains tool calls, process them recursively
+                if follow_tool_calls:
+                    print("Follow-up response contains tool_calls, processing recursively...")
+                    messages, tool_processed = process_tool_calls(follow, messages, tools, model, max_completion_tokens)
+                    return messages, tool_processed
+                    
             except Exception as e:
                 print("API error during follow-up:", e)
                 time.sleep(1)
